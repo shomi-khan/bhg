@@ -6,6 +6,16 @@ import (
 	"sync"
 )
 
+func checkPort(port int) {
+	address := fmt.Sprintf("localhost:%d", port)
+	conn, err := net.Dial("tcp", address)
+	if err != nil {
+		return
+	}
+	conn.Close()
+	fmt.Printf("Port %d is open\n", port)
+}
+
 func ScanPorts() {
 	fmt.Println("Starting concurrent port scanning...")
 	var wg sync.WaitGroup
@@ -15,13 +25,7 @@ func ScanPorts() {
 		wg.Add(1)
 		go func(port int) {
 			defer wg.Done()
-			address := fmt.Sprintf("localhost:%d", port)
-			conn, err := net.Dial("tcp", address)
-			if err != nil {
-				return
-			}
-			conn.Close()
-			fmt.Printf("Port %d is open\n", port)
+			checkPort(i)
 		}(i)
 	}
 }
