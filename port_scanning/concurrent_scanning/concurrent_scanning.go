@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"time"
 )
 
 func checkOpenPort(port int) bool {
@@ -28,6 +29,7 @@ func worker(pools chan int, wg *sync.WaitGroup) {
 
 func ScanPorts() {
 	fmt.Println("Starting concurrent port scanning...")
+	start := time.Now()
 	var wg sync.WaitGroup
 	defer wg.Wait()
 
@@ -40,4 +42,7 @@ func ScanPorts() {
 		wg.Add(1)
 		pools <- i
 	}
+
+	processingTime := time.Since(start)
+	fmt.Println("Total taken time, ", processingTime)
 }

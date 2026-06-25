@@ -3,9 +3,11 @@ package non_concurrent_scanning
 import (
 	"fmt"
 	"net"
+	"time"
 )
 
 func ScanPorts() {
+	start := time.Now()
 	fmt.Println("Starting non-concurrent port scanning...")
 	for port := 1; port <= 65535; port++ {
 		address := fmt.Sprintf("localhost:%d", port)
@@ -16,4 +18,6 @@ func ScanPorts() {
 		conn.Close()
 		fmt.Printf("Port %d is open\n", port)
 	}
+	processingTime := time.Since(start)
+	fmt.Println("Total taken time, ", processingTime)
 }
