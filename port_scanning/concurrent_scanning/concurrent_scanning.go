@@ -23,9 +23,9 @@ func ScanPorts() {
 
 	for i := 1; i <= 65535; i++ {
 		wg.Add(1)
-		go func(port int) {
+		go func(port int, wg *sync.WaitGroup) {
 			defer wg.Done()
 			checkPort(i)
-		}(i)
+		}(i, &wg)
 	}
 }
