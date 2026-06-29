@@ -9,19 +9,20 @@ import (
 
 func checkOpenPort(port int) bool {
 	address := fmt.Sprintf("localhost:%d", port)
-	conn, err := net.Dial("tcp", address)
-	if err == nil {
-		conn.Close()
-		return true
+
+	conn, err := net.DialTimeout("tcp", address, 500*time.Millisecond)
+	if err != nil {
+		return false
 	}
-	return false
+	defer conn.Close()
+
+	return true
 }
 
-func worker(pools chan int, wg *sync.WaitGroup) {
-	for i := range pools {
-		isOpen := checkOpenPort(i)
-		if isOpen {
-			fmt.Printf("Port %d is open\n", i)
+func worker(pools <-chan int, results chan<- int, wg *sync.WaitGroup) {
+	for port := range pools {
+		if checkOpenPort(port) {
+			results <- port
 		}
 		wg.Done()
 	}
@@ -30,19 +31,42 @@ func worker(pools chan int, wg *sync.WaitGroup) {
 func ScanPorts() {
 	fmt.Println("Starting concurrent port scanning...")
 	start := time.Now()
+
+	const totalPorts = 65535
+	const workerCount = 100
+
 	var wg sync.WaitGroup
-	defer wg.Wait()
 
-	pools := make(chan int, 100)
-	for i := 0; i < cap(pools); i++ {
-		go worker(pools, &wg)
+	pools := make(chan int, workerCount)
+	results := make(chan int, workerCount)
+
+	// Start workers
+	for i := 0; i < workerCount; i++ {
+		go worker(pools, results, &wg)
 	}
 
-	for i := 1; i <= 65535; i++ {
+	// Send ports to workers
+	for port := 1; port <= totalPorts; port++ {
 		wg.Add(1)
-		pools <- i
+		pools <- port
 	}
 
-	processingTime := time.Since(start)
-	fmt.Println("Total taken time, ", processingTime)
+	// No more jobs
+	close(pools)
+
+	// Close results after all workers finish
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	var openPorts []int
+
+	// Receive results
+	for port := range results {
+		openPorts = append(openPorts, port)
+	}
+
+	fmt.Println("Opened ports:", openPorts)
+	fmt.Println("Time taken:", time.Since(start))
 }
